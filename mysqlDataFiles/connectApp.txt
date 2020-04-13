@@ -1,0 +1,101 @@
+//core modules
+const path = require('path');
+
+//optional madules
+const express = require('express');
+const bodyParser = require('body-parser');
+
+//insert my modules
+const errorController = require('./controllers/error');
+const sequelize = require('./util/database');
+const Product=require('./models/product');
+const User=require('./models/user');
+const  Cart=require('./models/cart');
+const CartItem=require('./models/cart-item');
+const Order=require('./models/order');
+const OrderItem=require('./models/order-item');
+
+const app = express();
+
+app.set('view engine', 'ejs');
+app.set('views', 'views');
+
+const adminRoutes = require('./routes/admin');
+const shopRoutes = require('./routes/shop');
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+//add user to the each and every route
+
+app.use((req,res,next)=>{
+
+
+  User.findByPk(1)
+  .then(result=>{
+    req.user=result;
+    next();
+  })
+  .catch(err=>{
+    console.log(err);
+  })
+
+
+});
+
+app.use('/admin', adminRoutes);
+app.use(shopRoutes);
+
+app.use(errorController.get404);
+
+//association of the table
+Product.belongsTo(User, { constraints:true, onDelete:"CASCADE"});
+User.hasMany(Product);  //one user can have many products
+User.hasOne(Cart);    //one user have one cart
+Cart.belongsTo(User,{constraints :true,onDelete:'CASCADE'});   //one user has one cart and if user is delete the cart also gone
+Cart.belongsToMany(Product,{through:CartItem});
+Product.belongsToMany(Cart,{through:CartItem});
+User.hasMany(Order);
+Order.belongsTo(User);
+Order.belongsToMany(Product,{through:OrderItem});
+
+let userItentify;
+
+sequelize
+  .sync()
+  //.sync({force:true})
+  .then(result => {
+   
+    return User.findByPk(1);
+
+  })
+  .then((user)=>{
+
+    if(!user){
+       return User.create({userId:1,userName:'damith',userEmail:'anuradha@gmail.com'});
+    }
+    return user;
+  })
+  .then(user=>{
+
+    userItentify=user;
+    return user.getCart();
+
+  })
+  .then(cart=>{
+
+    if(!cart){
+      return userItentify.createCart();
+    }
+
+    return cart;
+
+  })
+  .then(result=>{
+
+   app.listen(3000);
+    
+  })
+  .catch(err => {
+    console.log(err);
+  });
