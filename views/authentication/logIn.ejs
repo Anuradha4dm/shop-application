@@ -16,12 +16,13 @@
             
             <div class="form-control">
                 <label for="username">Username or Email</label>
-                <input type="email" name="email" id="username" >
+                <input type="email" name="email" id="username" value="<%= oldInput.email %>" >
             </div>
             <div class="form-control">
                 <label for="password">Password</label>
-                <input type="password" name="password" id="password" >
+                <input type="password" name="password" id="password"  value="<%= oldInput.password %>">
             </div>
+          
             <input type="hidden" name='_csrf' value="<%= csrfNumbrt %>" >
             <button class="btn" type="submit">Log In</button>
             <a class="passwordforget" href="/password-reset">Foget password?</a>

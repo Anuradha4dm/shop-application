@@ -16,9 +16,8 @@ const transporter = nodemailer.createTransport({
 
 });
 
+
 exports.getLogIn = (req, res, next) => {
-
-
 
 
     const msg = req.flash('errMsg');
@@ -29,6 +28,7 @@ exports.getLogIn = (req, res, next) => {
         pageTitle: 'LOG IN',
         path: '',
         messege: (msg.length > 0) ? msg : false,
+        oldInput:{email:'',password:''}
 
     });
 }
@@ -43,7 +43,7 @@ exports.getSignUp = (req, res, next) => {
 
         pageTitle: 'SIGN UP',
         path: 'signup',
-
+        oldInput:{email:'',password:''},
         messege: (msg.length > 0) ? msg : false
 
     });
@@ -55,6 +55,18 @@ exports.postSignUp = (req, res, next) => {
 
     const email = req.body.email;
     const password = req.body.password;
+    var token;
+
+    crypto.randomBytes(32, (err, buff) => {
+        if (err) {
+            
+           const error=new Error(err.message);
+           error.httpStatusCode=500;
+            return next(error);
+        }
+
+        token = buff.toString('hex');
+    })
 
     const error = validationResult(req);
 
@@ -64,56 +76,52 @@ exports.postSignUp = (req, res, next) => {
 
             pageTitle: 'SIGN UP',
             path: '',
-            messege: error.array()[0].msg
-
+            messege: error.array()[0].msg,
+            oldInput:{email:email,password:password}
 
         })
 
     }
 
 
-    User.findOne({ email: email })
-        .then(result => {
 
-            if (result) {
-                req.flash('err', 'User is alrady exists');
-                return res.redirect('/signup');
-            }
+    bcrypt
+        .hash('123', 12)
+        .then(hashPwd => {
+            console.log(hashPwd);
 
-            bcrypt
-                .hash(password, 12)
-                .then(hashPwd => {
+            const newUser = new User({
+                email: email,
+                password: hashPwd,
+                initValidateToken: token,
+                cart: { item: [] }
+            });
 
-                    const newUser = new User({
-                        email: email,
-                        password: hashPwd,
-                        cart: { item: [] }
-                    });
+            return newUser.save();
 
-                    return newUser.save();
-
-
-                })
-                .then(() => {
-
-                    var emailME = {
-                        to: email,
-                        from: 'tharindha.lakmal@gmail.com',
-                        subject: 'shopMe sign Up success',
-                        html: '<p>thanks for sign up into shopMe have a good experiece</p>'
-                    };
-
-                    transporter.sendMail(emailME)
-                    .then(() => {
-                        res.redirect('/log-in');
-                    })
-
-                })
 
         })
+        .then(() => {
 
+            var emailME = {
+                to: email,
+                from: 'tharindha.lakmal@gmail.com',
+                subject: 'shopMe sign Up success',
+                html: `<p>thanks for sign up into shopMe have a good experiece</p>
+                        <h1>use this link to frist log in <a href='http://localhost:3000/log-in/${token}'>LOG IN</a></h1>
+                `
+            };
+
+            transporter.sendMail(emailME)
+                .then(() => {
+                    res.redirect('/log-in');
+                });
+
+        })
         .catch(err => {
-            console.log(err);
+            const error=new Error(err.message);
+            error.httpStatusCode=500;
+             return next(error);
         });
 
 }
@@ -121,33 +129,34 @@ exports.postSignUp = (req, res, next) => {
 exports.postLogIn = (req, res, next) => {
 
     const email = req.body.email;
-    const password = m(req.body.password);
+    const password = req.body.password;
 
-    User.findOne({ email: email })
-        .then(user => {
+    const error = validationResult(req);
 
-            if (user) {
-                if (password === user.password) {
+    if (!error.isEmpty()) {
 
-                    req.session.isEnable = true;
-                    req.session.user = user;
-                    return req.session.save(() => {
-                        res.redirect('/');
-                    });
+       
+        return res.status(422).render('authentication/logIn.ejs', {
 
-
-                }
-
-            }
-
-            req.flash('errMsg', 'invalid username or password ');
-            return res.redirect('/log-in');
-
+            pageTitle: 'SIGN UP',
+            path: '',
+            messege: error.array()[0].msg,
+            oldInput:{email:email,password:password}
 
         })
-        .catch(err => {
-            console.log(err);
-        })
+
+      
+    }
+
+    req.session.isEnable = true;
+    req.session.user = req.params.user;
+    req.session.save(() => {
+        res.redirect('/');
+
+    })
+
+
+
 
 }
 
@@ -224,7 +233,9 @@ exports.postPasswordRest = (req, res, next) => {
 
         })
         .catch(err => {
-            console.log(err);
+            const error=new Error(err.message);
+           error.httpStatusCode=500;
+            return next(error);
         })
 
 }
@@ -250,7 +261,9 @@ exports.getResetPasswordHandler = (req, res, next) => {
 
         })
         .catch(err => {
-            console.log(err);
+            const error=new Error(err.message);
+            error.httpStatusCode=500;
+             return next(error);
         })
 }
 
@@ -266,8 +279,6 @@ exports.postResetUpdatePassword = (req, res, next) => {
     User.findOne({ _id: userId, resetTocken: token })
         .then(user => {
 
-
-
             user.password = md5(password);
             user.resetTocken = null;
             user.resetExpire = null;
@@ -279,7 +290,9 @@ exports.postResetUpdatePassword = (req, res, next) => {
             res.redirect('/log-in');
         })
         .catch(err => {
-            console.log(err);
+            const error=new Error(err.message);
+            error.httpStatusCode=500;
+             return next(error); 
         })
 
 

@@ -9,11 +9,14 @@ const User= new Schema({
         require:true
     }
     ,
-    initialSignUpValid:{
+    isInitValid:{
         type:Boolean,
         default:false
     },
-
+    initValidateToken:{
+        type:String
+    }
+    ,
     resetTocken: {
         type:String
     },

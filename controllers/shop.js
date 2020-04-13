@@ -9,6 +9,7 @@ exports.getProducts = (req, res, next) => {
   Product.find()
     .then((products) => {
 
+      
       res.render('shop/product-list', {
         prods: products,
         pageTitle: 'All Products',
@@ -16,6 +17,12 @@ exports.getProducts = (req, res, next) => {
         isLogIn:req.session.isEnable
         
       });
+    })
+    .catch(err=>{
+      console.log('in');
+      const error=new Error(err.message);
+       error.httpStatusCode=404;
+        return next(error);
     })
 }
 

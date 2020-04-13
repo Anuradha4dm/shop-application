@@ -11,7 +11,7 @@ const route=express.Router();
 
 route.get('/log-in',authentication.getLogIn);
 
-route.post('/log-in',authentication.postLogIn);
+route.post('/log-in',validation.authenticateUser,validation.isInitValidLogIn,authentication.postLogIn);
 
 route.get('/signup',authentication.getSignUp);
 
@@ -26,6 +26,8 @@ route.post('/password-reset',authentication.postPasswordRest);
 route.get('/reset/:resetId',authentication.getResetPasswordHandler);
 
 route.post('/new-resetpwd',authentication.postResetUpdatePassword);
+
+route.get('/log-in/:validationId',validation.initLoginValidate,authentication.getLogIn);
 
 
 

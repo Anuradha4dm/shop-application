@@ -28,8 +28,9 @@ app.set('views', 'views');
 
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
-const errorController = require('./controllers/error');
+const errorRoutes = require('./routes/error');
 const authentication = require('./routes/authentication');
+
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -38,6 +39,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 const storeSession = new MongoSession({
     uri: MONGO_URL,
     collection: 'session'
+},(err)=>{
+   if(err){
+    throw new Error(err);
+   }
+   
+    
+   
 });
 
 app.use(session({
@@ -53,17 +61,22 @@ app.use((req, res, next) => {
 
     if (!req.session.user) {
 
+      
         return next();
     }
 
     User.findOne(req.session.user._id)
         .then(user => {
+            if(!user){
 
+                return next();
+            }
             req.user = user;
             next();
         })
         .catch(err => {
-            console.log(err);
+         
+           throw new Error(err);
         })
 
 });
@@ -82,17 +95,23 @@ app.use(function (req, res, next) {
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
 app.use(authentication);
-app.use(errorController.get404);
+app.use(errorRoutes);
+
+app.use((error,req,res,next)=>{
+
+    res.redirect('/404');
+});
 
 mongoose.connect(MONGO_URL,{ useNewUrlParser: true,useUnifiedTopology: true })
     .then(result => {
 
         console.log('connection success');
-        app.listen(process.env.PORT);
+        app.listen(3000);
 
     })
 
 
     .catch(err => {
+        console.log('ser');        
         console.log(err);
     })
