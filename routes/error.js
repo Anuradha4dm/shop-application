@@ -1,9 +1,11 @@
-const express=require('express');
 
-const errorController=require('../controllers/errorController');
+exports.get404 = (req, res, next) => {
 
-const route=express.Router();
+    res.status(404).render('404', {
+        pageTitle: 'Page Not Found',
+        path: '/404',
+        isLogIn: req.session.isEnable
 
-route.get('/404',errorController.ErrorPage404 );
+    });
 
-module.exports=route;
+}

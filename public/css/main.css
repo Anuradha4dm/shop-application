@@ -210,6 +210,40 @@ form {
   color: white;
 }
 
+
+.pagination ul{
+  
+ list-style-type: none;
+ margin: auto;
+ display: flex;
+
+}
+
+
+
+.pagination li{
+
+  border:2px solid green;
+  margin-left: 6px;
+
+}
+
+.pagination a:hover
+.pagination  a:active
+{
+  background-color: #00695c;
+  color:white;
+
+}
+
+.pagination a{
+
+  text-decoration: none;
+  padding: 16px;
+}
+
+
+
 @media (min-width: 768px) {
   .main-header__nav {
     display: flex;

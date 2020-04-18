@@ -6,6 +6,10 @@ const crypto = require('crypto');
 const { validationResult } = require('express-validator/check');
 const bcrypt = require('bcrypt');
 
+const sgMail=require('@sendgrid/mail');
+
+sgMail.setApiKey(process.env.APIKEY);
+
 const transporter = nodemailer.createTransport({
 
     service: 'gmail',
@@ -105,17 +109,20 @@ exports.postSignUp = (req, res, next) => {
 
             var emailME = {
                 to: email,
-                from: 'tharindha.lakmal@gmail.com',
+                from: 'damithanuradha44@gmail.com',
                 subject: 'shopMe sign Up success',
                 html: `<p>thanks for sign up into shopMe have a good experiece</p>
-                        <h1>use this link to frist log in <a href='http://localhost:3000/log-in/${token}'>LOG IN</a></h1>
+                        <h3>use this link to frist log in <a href='http://localhost:3000/log-in/${token}'>LOG IN</a></h3>
                 `
             };
 
-            transporter.sendMail(emailME)
+            sgMail.send(emailME)
                 .then(() => {
                     res.redirect('/log-in');
-                });
+                })
+                .catch(err=>{
+
+                })
 
         })
         .catch(err => {
@@ -212,10 +219,10 @@ exports.postPasswordRest = (req, res, next) => {
             user.save()
                 .then(result => {
 
-                    return transporter.sendMail({
+                    return sgMail.send({
 
-                        to: 'damithanuradha44@gmail.com',
-                        from: 'tharindha.lakmal@gmail.com',
+                        from: 'damithanuradha44@gmail.com',
+                        to: 'tharindha.lakmal@gmail.com',
                         subject: 'shopMe password reset',
 
                         html: `<p>click the link to reset password <a href='http://localhost:3000/reset/${tocken.toString('hex')}' >RESET NOW</a> </p>`

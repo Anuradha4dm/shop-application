@@ -3,6 +3,7 @@ const path = require('path');
 const express = require('express');
 
  const adminController = require('../controllers/admin');
+ const addProductValidation=require('../validation/addProductValidation');
 
  //this is for checking authenticate routes 
  const authRoute=require('../auth-routes/isAllow');
@@ -10,7 +11,7 @@ const express = require('express');
 const router = express.Router();
 
 // /admin/add-product => GET
-router.get('/add-product',authRoute, adminController.getAddProduct);
+router.get('/add-product',authRoute,addProductValidation.fieldValidations, adminController.getAddProduct);
 
 // /admin/products => GET
 router.get('/products', adminController.getProducts);
@@ -22,6 +23,6 @@ router.get('/edit-product/:productId',authRoute, adminController.getEditProduct)
 
 router.post('/edit-product',authRoute, adminController.postEditProduct);
 
-router.post('/delete-product',authRoute, adminController.postDeleteProduct);
+router.delete('/product/:productId',authRoute, adminController.deleteProduct);
 
 module.exports = router;

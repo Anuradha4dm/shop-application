@@ -1,33 +1,68 @@
 const Product = require('../models/product');
+const { validationResult } = require('express-validator/check');
+const deleteFile = require('../util/fileHelper').deleteFile;
+
+
 
 exports.getAddProduct = (req, res, next) => {
 
-  
 
   res.render('admin/edit-product', {
     pageTitle: 'Add Product',
     path: '/admin/add-product',
     editing: false,
-    isLogIn:req.session.isEnable
+    isLogIn: req.session.isEnable,
+    messege: '',
+    prePopulate: undefined
+
   });
 };
 
 exports.postAddProduct = (req, res, next) => {
 
-  
+  console.log("dfaf");
+
   const title = req.body.title;
-  const imageUrl = req.body.imageUrl;
+  const imageFile = req.file;
   const price = req.body.price;
   const description = req.body.description;
 
-  console.log(req.session);
-  const product = new Product({ title: title, imageUrl: imageUrl, price: price, description: description ,userId:req.session.user});
+  const error = validationResult(req).errors;
+  console.log(error[0]);
+
+
+
+  if (!imageFile) {
+
+    return res.render('admin/edit-product', {
+      pageTitle: 'Add Product',
+      path: '/admin/add-product',
+      editing: false,
+      isLogIn: req.session.isEnable,
+      messege: 'Problem in Image',
+      prePopulate: {
+        oldtitle: title,
+        oldprice: price,
+        olddescription: description
+      },
+
+    });
+
+  }
+
+  const product = new Product({
+    title: title,
+    imageUrl: imageFile.path,
+    price: price,
+    description: description, userId: req.session.user
+
+  });
 
   product.save()
     .then(result => {
 
       console.log("product id added successfully");
-      res.redirect('prosuct');
+      res.redirect('/product');
 
     })
     .catch(err => {
@@ -44,9 +79,8 @@ exports.getEditProduct = (req, res, next) => {
   const productId = req.params.productId;
   const productEditMode = req.query.edit;
 
-  Product.findOne({ _id: productId , userId: req.user._id })
+  Product.findOne({ _id: productId, userId: req.user._id })
     .then(product => {
-
 
       res.render('admin/edit-product.ejs', {
 
@@ -54,7 +88,7 @@ exports.getEditProduct = (req, res, next) => {
         pageTitle: 'EDIT PRODUCT',
         editing: productEditMode,
         product: product,
-        isLogIn:req.session.isEnable
+        isLogIn: req.session.isEnable
       });
 
     })
@@ -67,14 +101,36 @@ exports.getEditProduct = (req, res, next) => {
 exports.postEditProduct = (req, res, next) => {
   const prodId = req.body.productId;
 
-  Product.findOne({ _id: prodId ,userId:req.user._id })
+  Product.findOne({ _id: prodId, userId: req.user._id })
     .then(product => {
 
+      //if image exists then delete that 
+      deleteFile(product.imageUrl);
+
       product.title = req.body.title;
-      product.imageUrl = req.body.imageUrl;
+      product.imageUrl = req.file;
       product.description = req.body.description;
       product.price = req.body.price;
-    
+
+
+      if (!req.file) {
+
+        return res.render(`admin/edit-product/${prodId}`, {
+          pageTitle: 'Add Product',
+          path: '/admin/add-product',
+          editing: true,
+          isLogIn: req.session.isEnable,
+          messege: 'Problem in Image',
+          prePopulate: {
+            oldtitle: title,
+            oldprice: price,
+            olddescription: description
+          },
+
+        });
+
+      }
+
 
       return product.save();
 
@@ -94,14 +150,14 @@ exports.postEditProduct = (req, res, next) => {
 exports.getProducts = (req, res, next) => {
 
 
-  Product.find({userId:req.user._id})
+  Product.find({ userId: req.user._id })
     .then(products => {
 
       res.render('admin/products.ejs', {
         prods: products,
         pageTitle: 'Admin Products',
         path: '/admin/products',
-        isLogIn:req.session.isEnable
+        isLogIn: req.session.isEnable
       });
 
 
@@ -115,17 +171,26 @@ exports.getProducts = (req, res, next) => {
 
 };
 
-exports.postDeleteProduct = (req, res, next) => {
+exports.deleteProduct = (req, res, next) => {
 
-  const prodId = req.body.productId;
+  const prodId = req.params.productId;
+  
 
-  Product.remove( {_id: prodId,userId:req.user._id} )
-  .then(result=>{
+  Product.findOne({ _id: prodId })
+    .then(product => {
 
-    console.log("product wad deleted successfully..............");
-    res.redirect('/admin/products');
-  })
-  .catch(err=>{
-      console.log(err);
-  });
+      if (product) {
+        deleteFile(product.imageUrl);
+        return Product.deleteOne({ _id: prodId, userId: req.user._id });
+      }
+
+    })
+    .then(result => {
+
+      console.log("product wad deleted successfully..............");
+      res.status(200).json({message:'deleting succuss'});
+    })
+    .catch(err => {
+      res.status(500).json({message:'deleting failed'});
+    });
 };
